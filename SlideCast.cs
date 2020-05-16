@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
 
 
-namespace Dev
+namespace SlideCast
 {
-    public class Dev : IDalamudPlugin
+    public class SlideCast : IDalamudPlugin
     {
         public string Name => "Slide Cast";
         private DalamudPluginInterface pluginInterface;
@@ -51,6 +51,7 @@ namespace Dev
 
             getBaseUIObj = Marshal.GetDelegateForFunctionPointer<GetBaseUIObjDelegate>(scan1);
             getUI2ObjByName = Marshal.GetDelegateForFunctionPointer<GetUI2ObjByNameDelegate>(scan2);
+
             if(getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "ChatLog", 1) != IntPtr.Zero)
             { castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1); }
             else { castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "ChatLog", 1); } //Is a safety thing
@@ -125,7 +126,7 @@ namespace Dev
 
         private void DrawWindow()
         {
-            if (getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero)
+            if (getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero & getBaseUIObj() != IntPtr.Zero)
             {
                 if (config)
                 {
