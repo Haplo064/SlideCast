@@ -36,6 +36,8 @@ namespace Dev
         public float cbScale = 0f;
         public int cbCastTime = 0;
         public float cbCastPer = 0f;
+        public int slideTime = 50;
+        public Num.Vector4 slideCol;
 
 
         public void Initialize(DalamudPluginInterface pluginInterface)
@@ -49,7 +51,10 @@ namespace Dev
 
             getBaseUIObj = Marshal.GetDelegateForFunctionPointer<GetBaseUIObjDelegate>(scan1);
             getUI2ObjByName = Marshal.GetDelegateForFunctionPointer<GetUI2ObjByNameDelegate>(scan2);
-            castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "ChatLog", 1);
+            if(getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "ChatLog", 1) != IntPtr.Zero)
+            { castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1); }
+            else { castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "ChatLog", 1); } //Is a safety thing
+            
 
             this.pluginInterface.UiBuilder.OnBuildUi += DrawWindow;
             this.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
@@ -64,6 +69,40 @@ namespace Dev
             {
                 PluginLog.LogError("Failed to set Enabled");
                 enabled = false;
+            }
+
+            try
+            {
+                if (Configuration.SlideTime.HasValue)
+                {
+                    slideTime = Configuration.SlideTime.Value;
+                }
+                else
+                {
+                    slideTime = 50;
+                }
+            }
+            catch (Exception)
+            {
+                PluginLog.LogError("Failed to set SlideTime");
+                slideTime = 50;
+            }
+
+            try
+            {
+                if (Configuration.SlideCol != null)
+                {
+                    slideCol = Configuration.SlideCol;
+                }
+                else
+                {
+                    slideCol = new Num.Vector4(1.0f,1.0f,1.0f,1.0f);
+                }
+            }
+            catch (Exception)
+            {
+                PluginLog.LogError("Failed to set SlideTime");
+                slideTime = 50;
             }
 
         }
@@ -86,46 +125,51 @@ namespace Dev
 
         private void DrawWindow()
         {
-            if (config)
+            if (getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero)
             {
-                ImGui.SetNextWindowSize(new Num.Vector2(300, 500), ImGuiCond.FirstUseEver);
-                ImGui.Begin("SlideCast Config", ref config);
-                ImGui.Checkbox("Enable", ref enabled);
-                if (ImGui.Button("Save and Close Config"))
+                if (config)
                 {
-                    SaveConfig();
-                    config = false;
-                }
-                ImGui.End();
-            }
-
-            if (enabled)
-            {
-                if (castBar.ToString() != "0")
-                {
-                    cbX = Marshal.ReadInt16(castBar + 0x1BC);
-                    cbY = Marshal.ReadInt16(castBar + 0x1BE);
-                    cbScale = Marshal.PtrToStructure<float>(castBar + 0x1AC);
-                    cbCastTime = Marshal.ReadInt16(castBar + 0x2BC);
-                    cbCastPer = Marshal.PtrToStructure<float>(castBar + 0x2C0);
-
-                    if (Marshal.ReadByte(castBar + 0x182).ToString() != "84")
+                    ImGui.SetNextWindowSize(new Num.Vector2(300, 500), ImGuiCond.FirstUseEver);
+                    ImGui.Begin("SlideCast Config", ref config);
+                    ImGui.Checkbox("Enable", ref enabled);
+                    ImGui.InputInt("Time (ms)", ref slideTime);
+                    ImGui.ColorEdit4("Bar Colour", ref slideCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel);
+                    if (ImGui.Button("Save and Close Config"))
                     {
-                        ImGui.Begin("SlideCast", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
-                        ImGui.SetWindowPos(new Num.Vector2(cbX, cbY));
-                        ImGui.SetWindowSize(new Num.Vector2(220 * cbScale, 60 * cbScale));
-                        //float time = (float)cbCastTime - (0.01f * cbCastPer * (float)cbCastTime);
-                        float slidePer = ((float)cbCastTime - 60f) / (float)cbCastTime;
-                        ImGui.GetWindowDrawList().AddRectFilled(
-                            new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (20 * cbScale)),
-                            new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + 5 + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (29 * cbScale)),
-                            UintCol(255, 255, 255, 255));
-                        ImGui.End();
+                        SaveConfig();
+                        config = false;
                     }
+                    ImGui.End();
                 }
-                else
+
+                if (enabled)
                 {
-                    castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1);
+                    if (castBar != IntPtr.Zero)
+                    {
+                        cbX = Marshal.ReadInt16(castBar + 0x1BC);
+                        cbY = Marshal.ReadInt16(castBar + 0x1BE);
+                        cbScale = Marshal.PtrToStructure<float>(castBar + 0x1AC);
+                        cbCastTime = Marshal.ReadInt16(castBar + 0x2BC);
+                        cbCastPer = Marshal.PtrToStructure<float>(castBar + 0x2C0);
+
+                        if (Marshal.ReadByte(castBar + 0x182).ToString() != "84")
+                        {
+                            ImGui.Begin("SlideCast", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
+                            ImGui.SetWindowPos(new Num.Vector2(cbX, cbY));
+                            ImGui.SetWindowSize(new Num.Vector2(220 * cbScale, 60 * cbScale));
+                            //float time = (float)cbCastTime - (0.01f * cbCastPer * (float)cbCastTime);
+                            float slidePer = ((float)cbCastTime - (float)slideTime) / (float)cbCastTime;
+                            ImGui.GetWindowDrawList().AddRectFilled(
+                                new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (20 * cbScale)),
+                                new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + 5 + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (29 * cbScale)),
+                                ImGui.GetColorU32(slideCol));
+                            ImGui.End();
+                        }
+                    }
+                    else
+                    {
+                        castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1);
+                    }
                 }
             }
         }
@@ -133,19 +177,20 @@ namespace Dev
         public void SaveConfig()
         {
             Configuration.Enabled = enabled;
+            Configuration.SlideTime = slideTime;
+            Configuration.SlideCol = slideCol;
             this.pluginInterface.SavePluginConfig(Configuration);
         }
-
-        public uint UintCol(int A, int B, int G, int R)
-        {
-            return Convert.ToUInt32("0x" + A.ToString("X2") + B.ToString("X2") + G.ToString("X2") + R.ToString("X2"), 16);
-        }
-
     }
 
     public class Config : IPluginConfiguration
     {
         public int Version { get; set; } = 0;
         public bool Enabled { get; set; } = false;
+        public int? SlideTime { get; set; } = 50;
+        public Num.Vector4 SlideCol { get; set; } = new Num.Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+
     }
+
+
 }
