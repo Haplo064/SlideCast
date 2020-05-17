@@ -38,6 +38,8 @@ namespace SlideCast
         public float cbCastPer = 0f;
         public int slideTime = 50;
         public Num.Vector4 slideCol;
+        public int wait = 1000;
+        public bool check = true;
 
 
         public void Initialize(DalamudPluginInterface pluginInterface)
@@ -126,53 +128,70 @@ namespace SlideCast
 
         private void DrawWindow()
         {
-            if (getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero & getBaseUIObj() != IntPtr.Zero)
+            if (check)
             {
-                if (config)
+                if (getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero)
                 {
-                    ImGui.SetNextWindowSize(new Num.Vector2(300, 500), ImGuiCond.FirstUseEver);
-                    ImGui.Begin("SlideCast Config", ref config);
-                    ImGui.Checkbox("Enable", ref enabled);
-                    ImGui.InputInt("Time (ms)", ref slideTime);
-                    ImGui.ColorEdit4("Bar Colour", ref slideCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel);
-                    if (ImGui.Button("Save and Close Config"))
+                    wait = 1000;
+                    if (config)
                     {
-                        SaveConfig();
-                        config = false;
-                    }
-                    ImGui.End();
-                }
-
-                if (enabled)
-                {
-                    if (castBar != IntPtr.Zero)
-                    {
-                        cbX = Marshal.ReadInt16(castBar + 0x1BC);
-                        cbY = Marshal.ReadInt16(castBar + 0x1BE);
-                        cbScale = Marshal.PtrToStructure<float>(castBar + 0x1AC);
-                        cbCastTime = Marshal.ReadInt16(castBar + 0x2BC);
-                        cbCastPer = Marshal.PtrToStructure<float>(castBar + 0x2C0);
-
-                        if (Marshal.ReadByte(castBar + 0x182).ToString() != "84")
+                        ImGui.SetNextWindowSize(new Num.Vector2(300, 500), ImGuiCond.FirstUseEver);
+                        ImGui.Begin("SlideCast Config", ref config);
+                        ImGui.Checkbox("Enable", ref enabled);
+                        ImGui.InputInt("Time (ms)", ref slideTime);
+                        ImGui.ColorEdit4("Bar Colour", ref slideCol, ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel);
+                        if (ImGui.Button("Save and Close Config"))
                         {
-                            ImGui.Begin("SlideCast", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
-                            ImGui.SetWindowPos(new Num.Vector2(cbX, cbY));
-                            ImGui.SetWindowSize(new Num.Vector2(220 * cbScale, 60 * cbScale));
-                            //float time = (float)cbCastTime - (0.01f * cbCastPer * (float)cbCastTime);
-                            float slidePer = ((float)cbCastTime - (float)slideTime) / (float)cbCastTime;
-                            ImGui.GetWindowDrawList().AddRectFilled(
-                                new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (20 * cbScale)),
-                                new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + 5 + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (29 * cbScale)),
-                                ImGui.GetColorU32(slideCol));
-                            ImGui.End();
+                            SaveConfig();
+                            config = false;
+                        }
+                        ImGui.End();
+                    }
+
+                    if (enabled)
+                    {
+                        if (castBar != IntPtr.Zero)
+                        {
+
+                            cbX = Marshal.ReadInt16(castBar + 0x1BC);
+                            cbY = Marshal.ReadInt16(castBar + 0x1BE);
+                            cbScale = Marshal.PtrToStructure<float>(castBar + 0x1AC);
+                            cbCastTime = Marshal.ReadInt16(castBar + 0x2BC);
+                            cbCastPer = Marshal.PtrToStructure<float>(castBar + 0x2C0);
+
+
+
+                            if (Marshal.ReadByte(castBar + 0x182).ToString() != "84")
+                            {
+
+                                ImGui.Begin("SlideCast", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
+                                ImGui.SetWindowPos(new Num.Vector2(cbX, cbY));
+                                ImGui.SetWindowSize(new Num.Vector2(220 * cbScale, 60 * cbScale));
+                                //float time = (float)cbCastTime - (0.01f * cbCastPer * (float)cbCastTime);
+                                float slidePer = ((float)cbCastTime - (float)slideTime) / (float)cbCastTime;
+                                ImGui.GetWindowDrawList().AddRectFilled(
+                                    new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (20 * cbScale)),
+                                    new Num.Vector2(ImGui.GetWindowPos().X + (48 * cbScale) + 5 + (152 * slidePer * cbScale), ImGui.GetWindowPos().Y + (29 * cbScale)),
+                                    ImGui.GetColorU32(slideCol));
+                                ImGui.End();
+                            }
+                        }
+                        else
+                        {
+
+                            castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1);
                         }
                     }
-                    else
-                    {
-                        castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1);
-                    }
+                }
+                else
+                {
+                    check = false;
                 }
             }
+
+            if (wait > 0) { wait--; }
+            else { check = true; }
+
         }
 
         public void SaveConfig()
