@@ -78,10 +78,14 @@ namespace SlideCast
             getBaseUIObj = Marshal.GetDelegateForFunctionPointer<GetBaseUIObjDelegate>(scan1);
             getUI2ObjByName = Marshal.GetDelegateForFunctionPointer<GetUI2ObjByNameDelegate>(scan2);
 
-            if(getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero)
-            { castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1); }
-            else { castBar = IntPtr.Zero; }
-            
+            castBar = IntPtr.Zero;
+            IntPtr baseUi = getBaseUIObj();
+            if (baseUi != IntPtr.Zero) {
+                IntPtr baseUiProperties = Marshal.ReadIntPtr(baseUi, 0x20);
+                if (baseUiProperties != IntPtr.Zero) {
+                    castBar = getUI2ObjByName(baseUiProperties, "_CastBar", 1);
+                }
+            }
 
             this.pluginInterface.UiBuilder.OnBuildUi += DrawWindow;
             this.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
@@ -155,9 +159,12 @@ namespace SlideCast
 
         private void DrawWindow()
         {
-            if (check)
-            {
-                IntPtr tempCastBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1);
+            if (check) {
+                IntPtr baseUi = getBaseUIObj();
+                if (baseUi == IntPtr.Zero) return;
+                IntPtr baseUiProperties = Marshal.ReadIntPtr(baseUi, 0x20);
+                if (baseUiProperties == IntPtr.Zero) return;
+                IntPtr tempCastBar = getUI2ObjByName(baseUiProperties, "_CastBar", 1);
                 if (tempCastBar != IntPtr.Zero)
                 {
                     wait = 1000;
