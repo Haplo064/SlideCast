@@ -248,7 +248,7 @@ namespace SlideCast
                             if (Marshal.ReadByte(castBar + 0x182).ToString() != "84")
                             {
 
-                                ImGui.Begin("SlideCast", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
+                                ImGui.Begin("SlideCast", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoFocusOnAppearing);
                                 ImGui.SetWindowPos(new Num.Vector2(cbX, cbY));
                                 ImGui.SetWindowSize(new Num.Vector2(220 * cbScale, 60 * cbScale));
                                 //float time = (float)cbCastTime - (0.01f * cbCastPer * (float)cbCastTime);
