@@ -70,3 +70,6 @@ obj/SlideCast.csproj.nuget.g.targets
 Properties/AssemblyInfo.cs
 Properties/Settings.Designer.cs
 Properties/Settings.settings
+obj/Release/SlideCast.csproj.CopyComplete
+obj/Release/SlideCast.csproj.FileListAbsolute.txt
+obj/Release/SlideCast.csprojAssemblyReference.cache

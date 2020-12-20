@@ -78,16 +78,15 @@ namespace SlideCast
             getBaseUIObj = Marshal.GetDelegateForFunctionPointer<GetBaseUIObjDelegate>(scan1);
             getUI2ObjByName = Marshal.GetDelegateForFunctionPointer<GetUI2ObjByNameDelegate>(scan2);
 
-            if(getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero)
+            if (getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1) != IntPtr.Zero)
             { castBar = getUI2ObjByName(Marshal.ReadIntPtr(getBaseUIObj(), 0x20), "_CastBar", 1); }
             else { castBar = IntPtr.Zero; }
-            
 
             this.pluginInterface.UiBuilder.OnBuildUi += DrawWindow;
             this.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
             this.pluginInterface.CommandManager.AddHandler("/slc", new CommandInfo(Command)
             {
-                HelpMessage = ""
+                HelpMessage = "Open SlideCast config menu"
             });
 
             //actionSheet = pluginInterface.Data.GetExcelSheet<Lumina.Excel.GeneratedSheets.Action>();
@@ -125,7 +124,7 @@ namespace SlideCast
                 }
                 else
                 {
-                    slideCol = new Num.Vector4(1.0f,1.0f,1.0f,1.0f);
+                    slideCol = new Num.Vector4(1.0f, 1.0f, 1.0f, 1.0f);
                 }
             }
             catch (Exception)
@@ -134,6 +133,8 @@ namespace SlideCast
                 slideCol = new Num.Vector4(1.0f, 1.0f, 1.0f, 1.0f);
             }
 
+            pluginInterface.ClientState.OnLogout += (s, e) => enabled = false;
+            pluginInterface.ClientState.OnLogin += (s, e) => enabled = Configuration.Enabled;
         }
 
         public void Command(string command, string arguments)
@@ -186,7 +187,7 @@ namespace SlideCast
                             diffB_s = col2_s.Brightness - col1_s.Brightness;
                         }
                         */
-                        
+
                         if (ImGui.Button("Save and Close Config"))
                         {
                             SaveConfig();
@@ -197,7 +198,7 @@ namespace SlideCast
 
                     if (enabled)
                     {
-                        if(castBar != tempCastBar)
+                        if (castBar != tempCastBar)
                         {
                             castBar = IntPtr.Zero;
                         }
@@ -220,13 +221,13 @@ namespace SlideCast
                                 plus++;
                             }
                             cbSpellname = "";
-                            foreach(byte bit in cbSpell)
+                            foreach (byte bit in cbSpell)
                             {
                                 cbSpellname += (char)bit;
                             }
 
 
-                            if( cbCastLast == cbCastPer)
+                            if (cbCastLast == cbCastPer)
                             {
                                 if (cbCastSameCount < 5)
                                 { cbCastSameCount++; }
@@ -237,7 +238,7 @@ namespace SlideCast
                                 cbCastSameCount = 0;
                             }
 
-                            if(cbCastPer == 5)
+                            if (cbCastPer == 5)
                             {
                                 col_s = new Colour(col1_s.R / 255f, col1_s.G / 255f, col1_s.B / 255f);
                             }
@@ -268,18 +269,24 @@ namespace SlideCast
                                 }
                                 if (cbCastSameCount < 5)
                                 {
-                                    double castTimeSec = ((double)cbCastTime / 100) - ((double)cbCastTime / 100)*(cbCastPer/100);
+                                    float slidePer = 100 * ((float)cbCastTime - (float)slideTime) / (float)cbCastTime;
+                                    double castTimeSec = ((double)cbCastTime / 100) - ((double)cbCastTime / 100) * (cbCastPer / 100);
                                     ImGui.Begin("uiCastBar_Self", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
-                                    
-                                    col_s.setHSB(col1_s.Hue + (int)(diffH_s * (cbCastPer/100)), col1_s.Saturation + (int)(diffS_s * (cbCastPer / 100)), col1_s.Brightness + (int)(diffB_s * (cbCastPer / 100)));
+
+                                    col_s.setHSB(col1_s.Hue + (int)(diffH_s * (cbCastPer / 100)), col1_s.Saturation + (int)(diffS_s * (cbCastPer / 100)), col1_s.Brightness + (int)(diffB_s * (cbCastPer / 100)));
 
                                     Num.Vector2 centre = DrawCircleProgress(40f, 10f, 100, cbCastPer, col_s);
-                                    
+
+                                    Num.Vector2 lineStart = new Num.Vector2(centre.X + (35f * (float)Math.Sin((Math.PI / 100) * slidePer)), centre.Y + (35f * (float)Math.Cos((Math.PI / 100) * slidePer)));
+                                    Num.Vector2 lineEnd =   new Num.Vector2(centre.X + (45f * (float)Math.Sin((Math.PI / 100) * slidePer)), centre.Y + (45f * (float)Math.Cos((Math.PI / 100) * slidePer)));
+
+                                    ImGui.GetWindowDrawList().AddLine(lineStart, lineEnd, ImGui.GetColorU32(slideCol), 5f);
+
                                     ImGui.GetWindowDrawList().AddCircleFilled(
-                                        new Num.Vector2(centre.X, centre.Y),
-                                        35f,
-                                        ImGui.GetColorU32(new Num.Vector4(0.2f,0.2f,0.2f,0.2f)),
-                                        100);
+                                            new Num.Vector2(centre.X, centre.Y),
+                                            35f,
+                                            ImGui.GetColorU32(new Num.Vector4(0.2f, 0.2f, 0.2f, 0.2f)),
+                                            100);
                                     ImGui.GetWindowDrawList().AddCircle(
                                         new Num.Vector2(centre.X, centre.Y),
                                         45f,
@@ -302,7 +309,7 @@ namespace SlideCast
                                     ShadowFont(String.Format("{0:0.00}", castTimeSec));
 
                                     ImGui.SetCursorPos(new Num.Vector2(
-                                        centre.X - ImGui.GetWindowPos().X - (ImGui.CalcTextSize(cbCastPer.ToString()+"%").X) / 2,
+                                        centre.X - ImGui.GetWindowPos().X - (ImGui.CalcTextSize(cbCastPer.ToString() + "%").X) / 2,
                                         centre.Y + 15f - ImGui.GetWindowPos().Y));
                                     ShadowFont(cbCastPer.ToString() + "%%");
 
@@ -364,7 +371,7 @@ namespace SlideCast
                                         }
                                     }
                                 }
-                                
+
                             }
                         }
                         else
@@ -422,7 +429,7 @@ namespace SlideCast
 
         public Num.Vector2 DrawCircleProgress(float radius, float thickness, int num_segments, float percent, Colour colr)
         {
-            
+
             Num.Vector2 pos = ImGui.GetCursorPos();
             pos.X += ImGui.GetWindowPos().X + radius + thickness;
             pos.Y += ImGui.GetWindowPos().Y + radius + thickness;
