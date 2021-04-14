@@ -108,6 +108,16 @@ namespace SlideCast
                             SaveConfig();
                             _config = false;
                         }
+                        ImGui.SameLine();
+                        ImGui.PushStyleColor(ImGuiCol.Button, 0xFF000000 | 0x005E5BFF);
+                        ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0xDD000000 | 0x005E5BFF);
+                        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0xAA000000 | 0x005E5BFF);
+
+                        if (ImGui.Button("Buy Haplo a Hot Chocolate"))
+                        {
+                            System.Diagnostics.Process.Start("https://ko-fi.com/haplo");
+                        }
+                        ImGui.PopStyleColor(3);
                         ImGui.End();
                     }
 
@@ -155,17 +165,16 @@ namespace SlideCast
                             {
                                 ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Num.Vector2(_cbX, _cbY));
                                 ImGui.Begin("SlideCast", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground);
-                                ImGui.SetWindowPos(new Num.Vector2(_cbX, _cbY));
                                 ImGui.SetWindowSize(new Num.Vector2(220 * _cbScale, 60 * _cbScale));
                                 //float time = (float)cbCastTime - (0.01f * cbCastPer * (float)cbCastTime);
                                 float slidePer = ((float)_cbCastTime - (float)_slideTime) / (float)_cbCastTime;
                                 ImGui.GetWindowDrawList().AddRectFilled(
                                     new Num.Vector2(
-                                        ImGui.GetWindowPos().X + (48 * _cbScale) + (152 * slidePer * _cbScale) + ImGuiHelpers.MainViewport.Pos.X,
-                                        ImGui.GetWindowPos().Y + (20 * _cbScale) + ImGuiHelpers.MainViewport.Pos.X),
+                                        ImGui.GetWindowPos().X + (48 * _cbScale) + (152 * slidePer * _cbScale),
+                                        ImGui.GetWindowPos().Y + (20 * _cbScale)),
                                     new Num.Vector2(
-                                        ImGui.GetWindowPos().X + (48 * _cbScale) + 5 + (152 * slidePer * _cbScale) + ImGuiHelpers.MainViewport.Pos.X,
-                                        ImGui.GetWindowPos().Y + (29 * _cbScale) + ImGuiHelpers.MainViewport.Pos.Y),
+                                        ImGui.GetWindowPos().X + (48 * _cbScale) + 5 + (152 * slidePer * _cbScale), 
+                                        ImGui.GetWindowPos().Y + (29 * _cbScale)),
                                     ImGui.GetColorU32(_slideCol));
                                 ImGui.End();
                             }
