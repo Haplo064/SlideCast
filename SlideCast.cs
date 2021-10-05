@@ -8,13 +8,19 @@ using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
 using System.Linq;
 using System.Collections.Generic;
+using Dalamud.Game.ClientState;
+using Dalamud.IoC;
+using Dalamud.Game;
 
 namespace SlideCast
 {
     public class SlideCast : IDalamudPlugin
     {
         public string Name => "Slide Cast";
-        private DalamudPluginInterface _pI;
+        [PluginService] public DalamudPluginInterface PluginInterface { get; private set; }
+        [PluginService] public ClientState State { get; private set; }
+        private CommandManager commandManager { get; init; }
+        [PluginService] public static SigScanner SigScanner { get; private set; }
         private Config _configuration;
         private bool _enabled;
         private bool _config;
@@ -43,18 +49,17 @@ namespace SlideCast
         private Colour _colS = new Colour(0.04f, 0.8f, 1f, 1f);
         private readonly Colour _col1S = new Colour(0.04f, 0.4f, 1f, 1f);
 
-        public void Initialize(DalamudPluginInterface pluginInterface)
+        public SlideCast(CommandManager commandManager)
         {
-            _pI = pluginInterface;
-            _configuration = pluginInterface.GetPluginConfig() as Config ?? new Config();
-            _scan1 = pluginInterface.TargetModuleScanner.ScanText("E8 ?? ?? ?? ?? 41 b8 01 00 00 00 48 8d 15 ?? ?? ?? ?? 48 8b 48 20 e8 ?? ?? ?? ?? 48 8b cf");
-            _scan2 = pluginInterface.TargetModuleScanner.ScanText("e8 ?? ?? ?? ?? 48 8b cf 48 89 87 ?? ?? 00 00 e8 ?? ?? ?? ?? 41 b8 01 00 00 00");
+            _configuration = PluginInterface.GetPluginConfig() as Config ?? new Config();
+            _scan1 = SigScanner.ScanText("E8 ?? ?? ?? ?? 41 b8 01 00 00 00 48 8d 15 ?? ?? ?? ?? 48 8b 48 20 e8 ?? ?? ?? ?? 48 8b cf");
+            _scan2 = SigScanner.ScanText("e8 ?? ?? ?? ?? 48 8b cf 48 89 87 ?? ?? 00 00 e8 ?? ?? ?? ?? 41 b8 01 00 00 00");
             _getBaseUiObj = Marshal.GetDelegateForFunctionPointer<GetBaseUiObjDelegate>(_scan1);
             _getUi2ObjByName = Marshal.GetDelegateForFunctionPointer<GetUi2ObjByNameDelegate>(_scan2);
             _castBar = _getUi2ObjByName(Marshal.ReadIntPtr(_getBaseUiObj(), 0x20), "_CastBar", 1) != IntPtr.Zero ? _getUi2ObjByName(Marshal.ReadIntPtr(_getBaseUiObj(), 0x20), "_CastBar", 1) : IntPtr.Zero;
-            _pI.UiBuilder.OnBuildUi += DrawWindow;
-            _pI.UiBuilder.OnOpenConfigUi += ConfigWindow;
-            _pI.CommandManager.AddHandler("/slc", new CommandInfo(Command)
+            PluginInterface.UiBuilder.Draw += DrawWindow;
+            PluginInterface.UiBuilder.OpenConfigUi += ConfigWindow;
+            commandManager.AddHandler("/slc", new CommandInfo(Command)
             {
                 HelpMessage = "Open SlideCast config menu"
             });
@@ -63,8 +68,8 @@ namespace SlideCast
              _slideTime = _configuration.SlideTime;
              _slideCol = _configuration.SlideCol;
 
-             pluginInterface.ClientState.OnLogout += (s, e) => _enabled = false;
-             pluginInterface.ClientState.OnLogin += (s, e) => _enabled = _configuration.Enabled;
+             State.Logout += (s, e) => _enabled = false;
+             State.Login += (s, e) => _enabled = _configuration.Enabled;
         }
 
         private void Command(string command, string arguments)
@@ -74,12 +79,12 @@ namespace SlideCast
 
         public void Dispose()
         {
-            _pI.UiBuilder.OnBuildUi -= DrawWindow;
-            _pI.UiBuilder.OnOpenConfigUi -= ConfigWindow;
-            _pI.CommandManager.RemoveHandler("/slc");
+            PluginInterface.UiBuilder.Draw -= DrawWindow;
+            PluginInterface.UiBuilder.OpenConfigUi -= ConfigWindow;
+            commandManager.RemoveHandler("/slc");
         }
 
-        private void ConfigWindow(object sender, EventArgs args)
+        private void ConfigWindow()
         {
             _config = true;
         }
@@ -231,7 +236,7 @@ namespace SlideCast
             _configuration.Enabled = _enabled;
             _configuration.SlideTime = _slideTime;
             _configuration.SlideCol = _slideCol;
-            _pI.SavePluginConfig(_configuration);
+            PluginInterface.SavePluginConfig(_configuration);
         }
     }
 

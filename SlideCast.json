@@ -1,0 +1,16 @@
+{
+  "Author": "Haplo064",
+  "Name": "SlideCast",
+  "InternalName": "SlideCast",
+  "AssemblyVersion": "0.8.0.0",
+  "Description": "Adds an indicator of when it's safe to move while casting",
+  "RepoUrl": "https://github.com/Haplo064/SlideCast",
+  "Tags": [
+    "Castbar",
+    "UI",
+    "Overlay",
+    "Extension",
+    "Casting",
+    "Slide"
+  ],
+}
